@@ -21,6 +21,11 @@ type RepData struct {
 	CurrentTerm int64         `json:"currentTerm"`
 	VoteFor     string        `json:"VoteFor"`
 	MajorityNum int           `json:"MajorityNum"` // majority of cluster
+	// info for handle log entries, must persistence
+	LastLogIndex int64 `json:"lastLogIndex"`
+	LastLogTerm  int64 `json:"lastLogTerm"`
+	CommitIndex  int64 `json:"commitIndex"`
+	LastApplied  int64 `json:"lastApplied"`
 }
 
 // RepConfig replica load local config

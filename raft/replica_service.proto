@@ -5,7 +5,9 @@ option go_package = "github.com/GalaIO/herewe-distributed/raft";
 package raft;
 
 message LogEntry {
-
+  bytes Command = 1; // log data
+  int64 Index = 2; // log sequence num
+  int64 Term = 3; // term of the log
 }
 
 message AppendEntriesParams {
@@ -20,6 +22,9 @@ message AppendEntriesParams {
 message AppendEntriesResult {
   int64 Term = 1; //currentTerm, for leader to update
   bool success = 2; //true if contained entry matching prevLogIndex and prevLogTerm
+  int64 LastLogTerm = 3;
+  int64 LastLogIndex = 4;
+  int64 FirstLogIndexInLastTerm = 5; // the first log index in the term of last log's
 }
 
 message ReqVoteParams {

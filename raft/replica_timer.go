@@ -44,14 +44,14 @@ func (r *Replica) timeoutLoop() {
 	for {
 		select {
 		case <-r.electionTimer.C:
-			err := r.handleElectionTimeout()
+			err := r.whenElectionTimeout()
 			if err != nil {
-				repLog.Errorf("rep %v handleElectionTimeout err %v", r.conf.RepId, err)
+				repLog.Errorf("rep %v whenElectionTimeout err %v", r.conf.RepId, err)
 			}
 		case <-r.heartbeatTimer.C:
-			err := r.handleHeartBeatTimeout()
+			err := r.whenHeartBeatTimeout()
 			if err != nil {
-				repLog.Errorf("rep %v handleHeartBeatTimeout err %v", r.conf.RepId, err)
+				repLog.Errorf("rep %v whenHeartBeatTimeout err %v", r.conf.RepId, err)
 			}
 		case <-r.stopCh:
 			repLog.Debugf("rep %v stop timer loop", r.conf.RepId)
@@ -60,13 +60,13 @@ func (r *Replica) timeoutLoop() {
 	}
 }
 
-func (r *Replica) handleElectionTimeout() error {
+func (r *Replica) whenElectionTimeout() error {
 	r.electStart = true
 	r.transfer2Candidate()
 	return nil
 }
 
-func (r *Replica) handleHeartBeatTimeout() error {
+func (r *Replica) whenHeartBeatTimeout() error {
 	if r.state != Leader {
 		r.stopHeartbeatTimeout()
 		return nil

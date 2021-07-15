@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.23.0
 // 	protoc        v3.14.0
-// source: raft/replica_service.proto
+// source: replica_service.proto
 
 package raft
 
@@ -29,12 +29,16 @@ type LogEntry struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	Command []byte `protobuf:"bytes,1,opt,name=Command,proto3" json:"Command,omitempty"` // log data
+	Index   int64  `protobuf:"varint,2,opt,name=Index,proto3" json:"Index,omitempty"`    // log sequence num
+	Term    int64  `protobuf:"varint,3,opt,name=Term,proto3" json:"Term,omitempty"`      // term of the log
 }
 
 func (x *LogEntry) Reset() {
 	*x = LogEntry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_replica_service_proto_msgTypes[0]
+		mi := &file_replica_service_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -47,7 +51,7 @@ func (x *LogEntry) String() string {
 func (*LogEntry) ProtoMessage() {}
 
 func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_replica_service_proto_msgTypes[0]
+	mi := &file_replica_service_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +64,28 @@ func (x *LogEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_raft_replica_service_proto_rawDescGZIP(), []int{0}
+	return file_replica_service_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *LogEntry) GetCommand() []byte {
+	if x != nil {
+		return x.Command
+	}
+	return nil
+}
+
+func (x *LogEntry) GetIndex() int64 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *LogEntry) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
 }
 
 type AppendEntriesParams struct {
@@ -79,7 +104,7 @@ type AppendEntriesParams struct {
 func (x *AppendEntriesParams) Reset() {
 	*x = AppendEntriesParams{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_replica_service_proto_msgTypes[1]
+		mi := &file_replica_service_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -92,7 +117,7 @@ func (x *AppendEntriesParams) String() string {
 func (*AppendEntriesParams) ProtoMessage() {}
 
 func (x *AppendEntriesParams) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_replica_service_proto_msgTypes[1]
+	mi := &file_replica_service_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -105,7 +130,7 @@ func (x *AppendEntriesParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendEntriesParams.ProtoReflect.Descriptor instead.
 func (*AppendEntriesParams) Descriptor() ([]byte, []int) {
-	return file_raft_replica_service_proto_rawDescGZIP(), []int{1}
+	return file_replica_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AppendEntriesParams) GetTerm() int64 {
@@ -155,14 +180,17 @@ type AppendEntriesResult struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Term    int64 `protobuf:"varint,1,opt,name=Term,proto3" json:"Term,omitempty"`       //currentTerm, for leader to update
-	Success bool  `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"` //true if contained entry matching prevLogIndex and prevLogTerm
+	Term                    int64 `protobuf:"varint,1,opt,name=Term,proto3" json:"Term,omitempty"`       //currentTerm, for leader to update
+	Success                 bool  `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"` //true if contained entry matching prevLogIndex and prevLogTerm
+	LastLogTerm             int64 `protobuf:"varint,3,opt,name=LastLogTerm,proto3" json:"LastLogTerm,omitempty"`
+	LastLogIndex            int64 `protobuf:"varint,4,opt,name=LastLogIndex,proto3" json:"LastLogIndex,omitempty"`
+	FirstLogIndexInLastTerm int64 `protobuf:"varint,5,opt,name=FirstLogIndexInLastTerm,proto3" json:"FirstLogIndexInLastTerm,omitempty"` // the first log index in the term of last log's
 }
 
 func (x *AppendEntriesResult) Reset() {
 	*x = AppendEntriesResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_replica_service_proto_msgTypes[2]
+		mi := &file_replica_service_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -175,7 +203,7 @@ func (x *AppendEntriesResult) String() string {
 func (*AppendEntriesResult) ProtoMessage() {}
 
 func (x *AppendEntriesResult) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_replica_service_proto_msgTypes[2]
+	mi := &file_replica_service_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +216,7 @@ func (x *AppendEntriesResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendEntriesResult.ProtoReflect.Descriptor instead.
 func (*AppendEntriesResult) Descriptor() ([]byte, []int) {
-	return file_raft_replica_service_proto_rawDescGZIP(), []int{2}
+	return file_replica_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AppendEntriesResult) GetTerm() int64 {
@@ -205,6 +233,27 @@ func (x *AppendEntriesResult) GetSuccess() bool {
 	return false
 }
 
+func (x *AppendEntriesResult) GetLastLogTerm() int64 {
+	if x != nil {
+		return x.LastLogTerm
+	}
+	return 0
+}
+
+func (x *AppendEntriesResult) GetLastLogIndex() int64 {
+	if x != nil {
+		return x.LastLogIndex
+	}
+	return 0
+}
+
+func (x *AppendEntriesResult) GetFirstLogIndexInLastTerm() int64 {
+	if x != nil {
+		return x.FirstLogIndexInLastTerm
+	}
+	return 0
+}
+
 type ReqVoteParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -219,7 +268,7 @@ type ReqVoteParams struct {
 func (x *ReqVoteParams) Reset() {
 	*x = ReqVoteParams{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_replica_service_proto_msgTypes[3]
+		mi := &file_replica_service_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -232,7 +281,7 @@ func (x *ReqVoteParams) String() string {
 func (*ReqVoteParams) ProtoMessage() {}
 
 func (x *ReqVoteParams) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_replica_service_proto_msgTypes[3]
+	mi := &file_replica_service_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,7 +294,7 @@ func (x *ReqVoteParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqVoteParams.ProtoReflect.Descriptor instead.
 func (*ReqVoteParams) Descriptor() ([]byte, []int) {
-	return file_raft_replica_service_proto_rawDescGZIP(), []int{3}
+	return file_replica_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ReqVoteParams) GetTerm() int64 {
@@ -288,7 +337,7 @@ type ReqVoteResult struct {
 func (x *ReqVoteResult) Reset() {
 	*x = ReqVoteResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_raft_replica_service_proto_msgTypes[4]
+		mi := &file_replica_service_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -301,7 +350,7 @@ func (x *ReqVoteResult) String() string {
 func (*ReqVoteResult) ProtoMessage() {}
 
 func (x *ReqVoteResult) ProtoReflect() protoreflect.Message {
-	mi := &file_raft_replica_service_proto_msgTypes[4]
+	mi := &file_replica_service_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -314,7 +363,7 @@ func (x *ReqVoteResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqVoteResult.ProtoReflect.Descriptor instead.
 func (*ReqVoteResult) Descriptor() ([]byte, []int) {
-	return file_raft_replica_service_proto_rawDescGZIP(), []int{4}
+	return file_replica_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ReqVoteResult) GetTerm() int64 {
@@ -331,30 +380,42 @@ func (x *ReqVoteResult) GetVoteGranted() bool {
 	return false
 }
 
-var File_raft_replica_service_proto protoreflect.FileDescriptor
+var File_replica_service_proto protoreflect.FileDescriptor
 
-var file_raft_replica_service_proto_rawDesc = []byte{
-	0x0a, 0x1a, 0x72, 0x61, 0x66, 0x74, 0x2f, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x5f, 0x73,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x72, 0x61,
-	0x66, 0x74, 0x22, 0x0a, 0x0a, 0x08, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x22, 0xd9,
-	0x01, 0x0a, 0x13, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x1a, 0x0a, 0x08, 0x4c, 0x65,
-	0x61, 0x64, 0x65, 0x72, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x4c, 0x65,
-	0x61, 0x64, 0x65, 0x72, 0x49, 0x64, 0x12, 0x22, 0x0a, 0x0c, 0x50, 0x72, 0x65, 0x76, 0x4c, 0x6f,
-	0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x50, 0x72,
-	0x65, 0x76, 0x4c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x20, 0x0a, 0x0b, 0x50, 0x72,
-	0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52,
-	0x0b, 0x50, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x28, 0x0a, 0x07,
-	0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e,
-	0x72, 0x61, 0x66, 0x74, 0x2e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x65,
-	0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x12, 0x22, 0x0a, 0x0c, 0x4c, 0x65, 0x61, 0x64, 0x65, 0x72,
-	0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x4c, 0x65,
-	0x61, 0x64, 0x65, 0x72, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x22, 0x43, 0x0a, 0x13, 0x41, 0x70,
+var file_replica_service_proto_rawDesc = []byte{
+	0x0a, 0x15, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x72, 0x61, 0x66, 0x74, 0x22, 0x4e, 0x0a,
+	0x08, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x18, 0x0a, 0x07, 0x43, 0x6f, 0x6d,
+	0x6d, 0x61, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07, 0x43, 0x6f, 0x6d, 0x6d,
+	0x61, 0x6e, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x65, 0x72,
+	0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x22, 0xd9, 0x01,
+	0x0a, 0x13, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x50,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x1a, 0x0a, 0x08, 0x4c, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x4c, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x49, 0x64, 0x12, 0x22, 0x0a, 0x0c, 0x50, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67,
+	0x49, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x50, 0x72, 0x65,
+	0x76, 0x4c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x20, 0x0a, 0x0b, 0x50, 0x72, 0x65,
+	0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0b,
+	0x50, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x28, 0x0a, 0x07, 0x65,
+	0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x72,
+	0x61, 0x66, 0x74, 0x2e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x65, 0x6e,
+	0x74, 0x72, 0x69, 0x65, 0x73, 0x12, 0x22, 0x0a, 0x0c, 0x4c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x43,
+	0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x4c, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x22, 0xc3, 0x01, 0x0a, 0x13, 0x41, 0x70,
 	0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x75, 0x6c,
 	0x74, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
 	0x04, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12,
+	0x20, 0x0a, 0x0b, 0x4c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x0b, 0x4c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72,
+	0x6d, 0x12, 0x22, 0x0a, 0x0c, 0x4c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65,
+	0x78, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x4c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67,
+	0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x38, 0x0a, 0x17, 0x46, 0x69, 0x72, 0x73, 0x74, 0x4c, 0x6f,
+	0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x49, 0x6e, 0x4c, 0x61, 0x73, 0x74, 0x54, 0x65, 0x72, 0x6d,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x03, 0x52, 0x17, 0x46, 0x69, 0x72, 0x73, 0x74, 0x4c, 0x6f, 0x67,
+	0x49, 0x6e, 0x64, 0x65, 0x78, 0x49, 0x6e, 0x4c, 0x61, 0x73, 0x74, 0x54, 0x65, 0x72, 0x6d, 0x22,
 	0x8b, 0x01, 0x0a, 0x0d, 0x52, 0x65, 0x71, 0x56, 0x6f, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d,
 	0x73, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
 	0x04, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x20, 0x0a, 0x0b, 0x43, 0x61, 0x6e, 0x64, 0x69, 0x64, 0x61,
@@ -384,26 +445,26 @@ var file_raft_replica_service_proto_rawDesc = []byte{
 }
 
 var (
-	file_raft_replica_service_proto_rawDescOnce sync.Once
-	file_raft_replica_service_proto_rawDescData = file_raft_replica_service_proto_rawDesc
+	file_replica_service_proto_rawDescOnce sync.Once
+	file_replica_service_proto_rawDescData = file_replica_service_proto_rawDesc
 )
 
-func file_raft_replica_service_proto_rawDescGZIP() []byte {
-	file_raft_replica_service_proto_rawDescOnce.Do(func() {
-		file_raft_replica_service_proto_rawDescData = protoimpl.X.CompressGZIP(file_raft_replica_service_proto_rawDescData)
+func file_replica_service_proto_rawDescGZIP() []byte {
+	file_replica_service_proto_rawDescOnce.Do(func() {
+		file_replica_service_proto_rawDescData = protoimpl.X.CompressGZIP(file_replica_service_proto_rawDescData)
 	})
-	return file_raft_replica_service_proto_rawDescData
+	return file_replica_service_proto_rawDescData
 }
 
-var file_raft_replica_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_raft_replica_service_proto_goTypes = []interface{}{
+var file_replica_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_replica_service_proto_goTypes = []interface{}{
 	(*LogEntry)(nil),            // 0: raft.LogEntry
 	(*AppendEntriesParams)(nil), // 1: raft.AppendEntriesParams
 	(*AppendEntriesResult)(nil), // 2: raft.AppendEntriesResult
 	(*ReqVoteParams)(nil),       // 3: raft.ReqVoteParams
 	(*ReqVoteResult)(nil),       // 4: raft.ReqVoteResult
 }
-var file_raft_replica_service_proto_depIdxs = []int32{
+var file_replica_service_proto_depIdxs = []int32{
 	0, // 0: raft.AppendEntriesParams.entries:type_name -> raft.LogEntry
 	3, // 1: raft.ReplicaService.RequestVote:input_type -> raft.ReqVoteParams
 	1, // 2: raft.ReplicaService.AppendEntries:input_type -> raft.AppendEntriesParams
@@ -416,13 +477,13 @@ var file_raft_replica_service_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_raft_replica_service_proto_init() }
-func file_raft_replica_service_proto_init() {
-	if File_raft_replica_service_proto != nil {
+func init() { file_replica_service_proto_init() }
+func file_replica_service_proto_init() {
+	if File_replica_service_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_raft_replica_service_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_replica_service_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*LogEntry); i {
 			case 0:
 				return &v.state
@@ -434,7 +495,7 @@ func file_raft_replica_service_proto_init() {
 				return nil
 			}
 		}
-		file_raft_replica_service_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_replica_service_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*AppendEntriesParams); i {
 			case 0:
 				return &v.state
@@ -446,7 +507,7 @@ func file_raft_replica_service_proto_init() {
 				return nil
 			}
 		}
-		file_raft_replica_service_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_replica_service_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*AppendEntriesResult); i {
 			case 0:
 				return &v.state
@@ -458,7 +519,7 @@ func file_raft_replica_service_proto_init() {
 				return nil
 			}
 		}
-		file_raft_replica_service_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_replica_service_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReqVoteParams); i {
 			case 0:
 				return &v.state
@@ -470,7 +531,7 @@ func file_raft_replica_service_proto_init() {
 				return nil
 			}
 		}
-		file_raft_replica_service_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_replica_service_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReqVoteResult); i {
 			case 0:
 				return &v.state
@@ -487,18 +548,18 @@ func file_raft_replica_service_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_raft_replica_service_proto_rawDesc,
+			RawDescriptor: file_replica_service_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_raft_replica_service_proto_goTypes,
-		DependencyIndexes: file_raft_replica_service_proto_depIdxs,
-		MessageInfos:      file_raft_replica_service_proto_msgTypes,
+		GoTypes:           file_replica_service_proto_goTypes,
+		DependencyIndexes: file_replica_service_proto_depIdxs,
+		MessageInfos:      file_replica_service_proto_msgTypes,
 	}.Build()
-	File_raft_replica_service_proto = out.File
-	file_raft_replica_service_proto_rawDesc = nil
-	file_raft_replica_service_proto_goTypes = nil
-	file_raft_replica_service_proto_depIdxs = nil
+	File_replica_service_proto = out.File
+	file_replica_service_proto_rawDesc = nil
+	file_replica_service_proto_goTypes = nil
+	file_replica_service_proto_depIdxs = nil
 }

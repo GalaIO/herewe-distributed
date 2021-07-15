@@ -7,6 +7,8 @@ import (
 	"io"
 )
 
+//go:generate mockgen -package=raft -destination=storage_mock.go . Storage
+
 var (
 	ErrNotFound = errors.New("data not found")
 )

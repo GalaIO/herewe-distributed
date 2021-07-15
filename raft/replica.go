@@ -45,11 +45,10 @@ type Replica struct {
 
 	// persistent data
 	RepData
-	logs []int
+	// TODO save in db
+	logs []*LogEntry
 
 	// mem data
-	commitIndex      int64
-	lastApplied      int64
 	electionTimer    *time.Timer
 	heartbeatTimer   *time.Timer
 	electStart       bool // when electionTimer timeout, will set true
@@ -80,15 +79,13 @@ func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replica, err
 	conRepData := conf.RepData
 	majorityNum := (len(conRepData.Cluster.RepPeers) + 1) / 2
 	rep := &Replica{
-		conf:        conf,
-		state:       Follower,
-		rpcClient:   rpcClient,
-		stopCh:      make(chan bool),
-		logs:        nil,
-		commitIndex: 0,
-		lastApplied: 0,
-		nextIndex:   nil,
-		matchIndex:  nil,
+		conf:       conf,
+		state:      Follower,
+		rpcClient:  rpcClient,
+		stopCh:     make(chan bool),
+		logs:       nil,
+		nextIndex:  nil,
+		matchIndex: nil,
 	}
 	rep.RepData = conRepData
 	rep.RepData.MajorityNum = majorityNum
@@ -116,7 +113,7 @@ func (r *Replica) Start() error {
 	repLog.Debugf("rep %v has start...", r.conf.RepId)
 
 	// start from follower
-	r.initAsFollower()
+	r.initAsFollower(r.CurrentTerm)
 	r.resetHeartbeatTimer()
 
 	// run some loop
@@ -141,14 +138,14 @@ func (r *Replica) initAsLeader() {
 		if strings.EqualFold(peer.RepId, r.conf.RepId) {
 			continue
 		}
-		r.nextIndex[peer.RepId] = r.commitIndex
+		r.nextIndex[peer.RepId] = r.LastLogIndex + 1
 	}
 	r.matchIndex = make(map[string]int64, repCount-1)
 	for _, peer := range r.Cluster.RepPeers {
 		if strings.EqualFold(peer.RepId, r.conf.RepId) {
 			continue
 		}
-		r.matchIndex[peer.RepId] = r.commitIndex
+		r.matchIndex[peer.RepId] = 0
 	}
 
 	// stop timeout
@@ -174,12 +171,15 @@ func (r *Replica) transfer2Leader() error {
 
 	repLog.Debugf("rep %v win to be leader", r.conf.RepId)
 	r.initAsLeader()
+	// send heartbeat instantly
+	r.whenHeartBeatTimeout()
+
 	// reset send heartbeat
 	r.resetHeartbeatTimer()
 	return nil
 }
 
-func (r *Replica) HandleVote(repId string) error {
+func (r *Replica) OnReceiveVote(repId string) error {
 	if r.state != Candidate {
 		return fmt.Errorf("only candidate could receive vote, now %v", r.state)
 	}
@@ -191,7 +191,8 @@ func (r *Replica) HandleVote(repId string) error {
 	return nil
 }
 
-func (r *Replica) initAsFollower() {
+func (r *Replica) initAsFollower(incomeTerm int64) {
+	r.CurrentTerm = incomeTerm
 	r.state = Follower
 	r.VoteFor = ""
 
@@ -269,7 +270,7 @@ func (r *Replica) transfer2Follower(incomeTerm int64, remoteState RepSate) error
 		return fmt.Errorf("wrong state %v to follower", r.state)
 	}
 
-	r.initAsFollower()
+	r.initAsFollower(incomeTerm)
 	return nil
 }
 
@@ -288,13 +289,16 @@ func (r *Replica) VoteToU(repId string, incomeTerm int64) error {
 		return err
 	}
 	r.VoteFor = repId
-	r.CurrentTerm = incomeTerm
 	return nil
 }
 
-func (r *Replica) HandleHeartBeat(incomeTerm int64, leaderId string) error {
-	r.recentlyLeaderId = leaderId
-	return r.transfer2Follower(incomeTerm, Leader)
+func (r *Replica) OnReceiveHeartBeat(incomeTerm int64, leaderId string) error {
+	err := r.transfer2Follower(incomeTerm, Leader)
+	if err == nil {
+		// accept the leader
+		r.recentlyLeaderId = leaderId
+	}
+	return err
 }
 
 func (r *Replica) startElect() {
@@ -327,8 +331,8 @@ func (r *Replica) handleRequestVoteResult(voteResult *ReqVoteResult,
 		}
 		return
 	}
-	if err := r.HandleVote(peer.RepId); err != nil {
-		repLog.Debugf("rep %v get vote, HandleVote err %v", r.conf.RepId, err)
+	if err := r.OnReceiveVote(peer.RepId); err != nil {
+		repLog.Debugf("rep %v get vote, OnReceiveVote err %v", r.conf.RepId, err)
 		return
 	}
 	if err := r.transfer2Leader(); err != nil {
@@ -337,14 +341,34 @@ func (r *Replica) handleRequestVoteResult(voteResult *ReqVoteResult,
 }
 
 func (r *Replica) handleAppendEntriesResult(result *AppendEntriesResult,
-	peer RepPeer) {
+	peer RepPeer) error {
 	// if not success, try transfer to follower
 	if !result.Success {
 		if err := r.transfer2Follower(result.Term, Follower); err != nil {
 			repLog.Debugf("rep %v not voted, transfer2Follower err %v", r.conf.RepId, err)
 		}
-		return
+		return errors.New("cannot append entries")
 	}
 
 	// other just retry
+	return nil
+}
+
+func (r *Replica) queryEntryByIndex(index int64) (*LogEntry, error) {
+	if index >= int64(len(r.logs)) {
+		return nil, ErrNotFound
+	}
+	return r.logs[index], nil
+}
+
+func (r *Replica) queryRangeEntryByIndex(start int64, end int64) ([]*LogEntry, error) {
+
+	if end >= int64(len(r.logs)) || start > end || start < 0 {
+		return nil, ErrNotFound
+	}
+	return r.logs[start:end], nil
+}
+
+func (r *Replica) saveLogEntry(index int64, entry *LogEntry) {
+	r.logs = append(r.logs, entry)
 }

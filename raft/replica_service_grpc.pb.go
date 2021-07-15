@@ -133,5 +133,5 @@ var ReplicaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "raft/replica_service.proto",
+	Metadata: "replica_service.proto",
 }

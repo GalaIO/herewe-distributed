@@ -9,7 +9,16 @@ import (
 	"time"
 )
 
+//go:generate protoc --go_out=. --go_opt=paths=source_relative  --go-grpc_out=. --go-grpc_opt=paths=source_relative  replica_service.proto
+//go:generate mockgen -package=raft -destination=rpc_mock.go . RpcClient,RpcServer
+
 var rpcLog = logger.GetLogger("rpc")
+
+type RpcServer interface {
+	ReplicaServiceServer
+	Start() error
+	Stop() error
+}
 
 type RpcServerImpl struct {
 	UnimplementedReplicaServiceServer
@@ -17,7 +26,7 @@ type RpcServerImpl struct {
 	server *grpc.Server
 }
 
-func NewRepServer(rep *Replica) *RpcServerImpl {
+func NewRepServer(rep *Replica) RpcServer {
 	r := &RpcServerImpl{
 		rep: rep,
 	}

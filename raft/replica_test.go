@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -50,7 +51,7 @@ func TestReplica_transfer2Leader(t *testing.T) {
 
 	rep.initAsCandidate()
 	for _, repId := range mockRepIds {
-		err := rep.HandleVote(repId)
+		err := rep.OnReceiveVote(repId)
 		assert.NoError(t, err)
 	}
 	err := rep.transfer2Leader()
@@ -64,7 +65,7 @@ func TestReplica_transfer2LeaderFromFollower(t *testing.T) {
 	rep := initMockRep(t)
 
 	for _, repId := range mockRepIds {
-		err := rep.HandleVote(repId)
+		err := rep.OnReceiveVote(repId)
 		assert.Error(t, err)
 	}
 	err := rep.transfer2Leader()
@@ -265,7 +266,7 @@ func TestReplica_HandelHeartBeat(t *testing.T) {
 	old := rep.CurrentTerm
 	for i := 0; i < 10; i++ {
 		time.Sleep(100 * time.Millisecond)
-		rep.HandleHeartBeat(old, mockRepIds[0])
+		rep.OnReceiveHeartBeat(old, mockRepIds[0])
 		assert.Equal(t, Follower, rep.state)
 		assert.Equal(t, old, rep.CurrentTerm)
 	}
@@ -275,8 +276,15 @@ func TestReplica_HandelHeartBeat(t *testing.T) {
 }
 
 func initMockRep(t *testing.T) *Replica {
-	storage := NewMockStorage()
-	rpcClient := NewMockRpcClient()
+	ctrl := gomock.NewController(t)
+	storage := NewMockStorage(ctrl)
+	storage.EXPECT().GetRepData().Return(nil, ErrNotFound).AnyTimes()
+	storage.EXPECT().SaveRepData(gomock.Any()).Return(nil).AnyTimes()
+
+	rpcClient := NewMockRpcClient(ctrl)
+	rpcClient.EXPECT().SendAppendEntries(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, ErrNotFound).AnyTimes()
+	rpcClient.EXPECT().SendRequestVote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, ErrNotFound).AnyTimes()
+
 	rep, _ := NewRep(storage, rpcClient, mockRepConfig)
 
 	err := rep.Start()

@@ -8,7 +8,7 @@ type Raft struct {
 	conf   Config
 	db     Storage
 	rep    *Replica
-	server *RpcServerImpl
+	server RpcServer
 }
 
 func NewRaft(conf Config) (*Raft, error) {
