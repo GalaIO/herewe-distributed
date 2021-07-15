@@ -7,7 +7,7 @@ import (
 type Raft struct {
 	conf   Config
 	db     Storage
-	rep    *Replication
+	rep    *Replica
 	server *RpcServerImpl
 }
 
@@ -24,7 +24,7 @@ func NewRaft(conf Config) (*Raft, error) {
 	rpcClient := NewRpcClient()
 	r.rep, err = NewRep(r.db, rpcClient, conf.Rep)
 	if err != nil {
-		panic(fmt.Errorf("init replication err %v", err))
+		panic(fmt.Errorf("init replica err %v", err))
 	}
 	r.server = NewRepServer(r.rep)
 

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// replication states
+// replica states
 type RepSate int
 
 func (r RepSate) String() string {
@@ -36,9 +36,9 @@ var repStateStringMap = map[RepSate]string{
 	Leader:    "Leader",
 }
 
-var repLog = logger.GetLogger("replication")
+var repLog = logger.GetLogger("replica")
 
-type Replication struct {
+type Replica struct {
 	// rep info
 	conf  RepConfig
 	state RepSate
@@ -71,7 +71,7 @@ type Replication struct {
 	retryElectCount int
 }
 
-func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replication, error) {
+func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replica, error) {
 
 	repData, err := storage.GetRepData()
 	if err != nil && err != ErrNotFound {
@@ -79,7 +79,7 @@ func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replication,
 	}
 	conRepData := conf.RepData
 	majorityNum := (len(conRepData.Cluster.RepPeers) + 1) / 2
-	rep := &Replication{
+	rep := &Replica{
 		conf:        conf,
 		state:       Follower,
 		rpcClient:   rpcClient,
@@ -98,12 +98,12 @@ func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replication,
 	}
 
 	if len(rep.Cluster.RepPeers) < 3 {
-		return nil, fmt.Errorf("replication cluster must contain more 3 reps, "+
+		return nil, fmt.Errorf("replica cluster must contain more 3 reps, "+
 			"now %v", len(rep.Cluster.RepPeers))
 	}
 
 	if rep.conf.HeartbeatTimeout >= rep.conf.MinElectionTimeout {
-		return nil, fmt.Errorf("replication HeartbeatTimeout need less MinElectionTimeout, "+
+		return nil, fmt.Errorf("replica HeartbeatTimeout need less MinElectionTimeout, "+
 			"%v:%v", rep.conf.HeartbeatTimeout, rep.conf.MinElectionTimeout)
 	}
 
@@ -112,7 +112,7 @@ func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replication,
 }
 
 // connect and listen other reps
-func (r *Replication) Start() error {
+func (r *Replica) Start() error {
 	repLog.Debugf("rep %v has start...", r.conf.RepId)
 
 	// start from follower
@@ -125,7 +125,7 @@ func (r *Replication) Start() error {
 }
 
 // connect and listen other reps
-func (r *Replication) Stop() error {
+func (r *Replica) Stop() error {
 	repLog.Debugf("rep %v will stop...", r.conf.RepId)
 	r.stopElectionTimeout()
 	r.stopHeartbeatTimeout()
@@ -133,7 +133,7 @@ func (r *Replication) Stop() error {
 	return nil
 }
 
-func (r *Replication) initAsLeader() {
+func (r *Replica) initAsLeader() {
 	r.state = Leader
 	repCount := len(r.Cluster.RepPeers)
 	r.nextIndex = make(map[string]int64, repCount-1)
@@ -155,13 +155,13 @@ func (r *Replication) initAsLeader() {
 	r.stopElectionTimeout()
 }
 
-func (r *Replication) String() string {
+func (r *Replica) String() string {
 	bytes, _ := json.Marshal(r)
 	return string(bytes)
 }
 
 // transfer2Leader only candidate -> leader
-func (r *Replication) transfer2Leader() error {
+func (r *Replica) transfer2Leader() error {
 
 	if r.state != Candidate {
 		return errors.New("only candidate could transfer to leader")
@@ -179,7 +179,7 @@ func (r *Replication) transfer2Leader() error {
 	return nil
 }
 
-func (r *Replication) HandleVote(repId string) error {
+func (r *Replica) HandleVote(repId string) error {
 	if r.state != Candidate {
 		return fmt.Errorf("only candidate could receive vote, now %v", r.state)
 	}
@@ -191,7 +191,7 @@ func (r *Replication) HandleVote(repId string) error {
 	return nil
 }
 
-func (r *Replication) initAsFollower() {
+func (r *Replica) initAsFollower() {
 	r.state = Follower
 	r.VoteFor = ""
 
@@ -199,7 +199,7 @@ func (r *Replication) initAsFollower() {
 	r.resetElectionTimer()
 }
 
-func (r *Replication) initAsCandidate() {
+func (r *Replica) initAsCandidate() {
 	if r.state != Candidate {
 		r.retryElectCount = 0
 	}
@@ -218,7 +218,7 @@ func (r *Replication) initAsCandidate() {
 
 // transfer2Candidate, only when electionTimeout cloud -> Candidate
 // may Follower -> Candidate or Candidate -> Candidate
-func (r *Replication) transfer2Candidate() error {
+func (r *Replica) transfer2Candidate() error {
 
 	if !r.electStart {
 		return errors.New("there no election timeout to start elect")
@@ -238,7 +238,7 @@ func (r *Replication) transfer2Candidate() error {
 	return nil
 }
 
-func (r *Replication) transfer2Follower(incomeTerm int64, remoteState RepSate) error {
+func (r *Replica) transfer2Follower(incomeTerm int64, remoteState RepSate) error {
 
 	if incomeTerm < r.CurrentTerm {
 		return fmt.Errorf("low term %v:%v from %v",
@@ -273,7 +273,7 @@ func (r *Replication) transfer2Follower(incomeTerm int64, remoteState RepSate) e
 	return nil
 }
 
-func (r *Replication) VoteToU(repId string, incomeTerm int64) error {
+func (r *Replica) VoteToU(repId string, incomeTerm int64) error {
 	if incomeTerm < r.CurrentTerm {
 		return fmt.Errorf("old term %v now %v", incomeTerm, r.CurrentTerm)
 	}
@@ -292,12 +292,12 @@ func (r *Replication) VoteToU(repId string, incomeTerm int64) error {
 	return nil
 }
 
-func (r *Replication) HandleHeartBeat(incomeTerm int64, leaderId string) error {
+func (r *Replica) HandleHeartBeat(incomeTerm int64, leaderId string) error {
 	r.recentlyLeaderId = leaderId
 	return r.transfer2Follower(incomeTerm, Leader)
 }
 
-func (r *Replication) startElect() {
+func (r *Replica) startElect() {
 	ctx := context.Background()
 	voteParams := &ReqVoteParams{
 		Term:         r.CurrentTerm,
@@ -318,7 +318,7 @@ func (r *Replication) startElect() {
 	}
 }
 
-func (r *Replication) handleRequestVoteResult(voteResult *ReqVoteResult,
+func (r *Replica) handleRequestVoteResult(voteResult *ReqVoteResult,
 	peer RepPeer) {
 	// if not voted, try transfer to follower
 	if !voteResult.VoteGranted {
@@ -336,7 +336,7 @@ func (r *Replication) handleRequestVoteResult(voteResult *ReqVoteResult,
 	}
 }
 
-func (r *Replication) handleAppendEntriesResult(result *AppendEntriesResult,
+func (r *Replica) handleAppendEntriesResult(result *AppendEntriesResult,
 	peer RepPeer) {
 	// if not success, try transfer to follower
 	if !result.Success {

@@ -12,17 +12,17 @@ import (
 var rpcLog = logger.GetLogger("rpc")
 
 type RpcServerImpl struct {
-	UnimplementedReplicationServiceServer
-	rep    *Replication
+	UnimplementedReplicaServiceServer
+	rep    *Replica
 	server *grpc.Server
 }
 
-func NewRepServer(rep *Replication) *RpcServerImpl {
+func NewRepServer(rep *Replica) *RpcServerImpl {
 	r := &RpcServerImpl{
 		rep: rep,
 	}
 	s := grpc.NewServer()
-	RegisterReplicationServiceServer(s, r)
+	RegisterReplicaServiceServer(s, r)
 	r.server = s
 	return r
 }
@@ -71,7 +71,7 @@ func (r *RpcClientImpl) SendRequestVote(ctx context.Context, params *ReqVotePara
 		return nil, err
 	}
 	defer conn.Close()
-	c := NewReplicationServiceClient(conn)
+	c := NewReplicaServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -89,7 +89,7 @@ func (r *RpcClientImpl) SendAppendEntries(ctx context.Context, params *AppendEnt
 		return nil, err
 	}
 	defer conn.Close()
-	c := NewReplicationServiceClient(conn)
+	c := NewReplicaServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()

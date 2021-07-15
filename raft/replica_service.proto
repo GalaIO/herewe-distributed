@@ -34,7 +34,7 @@ message ReqVoteResult {
   bool VoteGranted = 2; //true means candidate received vote
 }
 
-service ReplicationService {
+service ReplicaService {
   rpc RequestVote(ReqVoteParams) returns (ReqVoteResult) {}
   rpc AppendEntries(AppendEntriesParams) returns (AppendEntriesResult) {}
 }

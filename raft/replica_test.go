@@ -44,7 +44,7 @@ var mockRepConfig = RepConfig{
 	},
 }
 
-func TestReplication_transfer2Leader(t *testing.T) {
+func TestReplica_transfer2Leader(t *testing.T) {
 
 	rep := initMockRep(t)
 
@@ -59,7 +59,7 @@ func TestReplication_transfer2Leader(t *testing.T) {
 
 }
 
-func TestReplication_transfer2LeaderFromFollower(t *testing.T) {
+func TestReplica_transfer2LeaderFromFollower(t *testing.T) {
 
 	rep := initMockRep(t)
 
@@ -72,7 +72,7 @@ func TestReplication_transfer2LeaderFromFollower(t *testing.T) {
 
 }
 
-func TestReplication_transfer2CandidateFromFollower(t *testing.T) {
+func TestReplica_transfer2CandidateFromFollower(t *testing.T) {
 
 	rep := initMockRep(t)
 	oldTerm := rep.CurrentTerm
@@ -84,7 +84,7 @@ func TestReplication_transfer2CandidateFromFollower(t *testing.T) {
 	assert.Equal(t, oldTerm+1, rep.CurrentTerm)
 }
 
-func TestReplication_transfer2CandidateFromCandidate(t *testing.T) {
+func TestReplica_transfer2CandidateFromCandidate(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsCandidate()
@@ -97,7 +97,7 @@ func TestReplication_transfer2CandidateFromCandidate(t *testing.T) {
 	assert.Equal(t, oldTerm+1, rep.CurrentTerm)
 }
 
-func TestReplication_transfer2CandidateFromLeader(t *testing.T) {
+func TestReplica_transfer2CandidateFromLeader(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsLeader()
@@ -107,7 +107,7 @@ func TestReplication_transfer2CandidateFromLeader(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestReplication_electionTimeout(t *testing.T) {
+func TestReplica_electionTimeout(t *testing.T) {
 
 	rep := initMockRep(t)
 
@@ -124,7 +124,7 @@ func TestReplication_electionTimeout(t *testing.T) {
 	t.Log("retryElectCount:", rep.retryElectCount)
 }
 
-func TestReplication_transfer2FollowerFromLeader(t *testing.T) {
+func TestReplica_transfer2FollowerFromLeader(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsLeader()
@@ -135,7 +135,7 @@ func TestReplication_transfer2FollowerFromLeader(t *testing.T) {
 	assert.Equal(t, Follower, rep.state)
 }
 
-func TestReplication_transfer2FollowerFromCandidate(t *testing.T) {
+func TestReplica_transfer2FollowerFromCandidate(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsCandidate()
@@ -146,7 +146,7 @@ func TestReplication_transfer2FollowerFromCandidate(t *testing.T) {
 	assert.Equal(t, Follower, rep.state)
 }
 
-func TestReplication_transfer2FollowerFromCandidateInSameTerm(t *testing.T) {
+func TestReplica_transfer2FollowerFromCandidateInSameTerm(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsCandidate()
@@ -157,7 +157,7 @@ func TestReplication_transfer2FollowerFromCandidateInSameTerm(t *testing.T) {
 	assert.Equal(t, Follower, rep.state)
 }
 
-func TestReplication_transfer2FollowerFromCandidateInSameTerm2(t *testing.T) {
+func TestReplica_transfer2FollowerFromCandidateInSameTerm2(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsCandidate()
@@ -167,7 +167,7 @@ func TestReplication_transfer2FollowerFromCandidateInSameTerm2(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestReplication_VoteToUInFollower(t *testing.T) {
+func TestReplica_VoteToUInFollower(t *testing.T) {
 
 	rep := initMockRep(t)
 
@@ -203,7 +203,7 @@ func TestReplication_VoteToUInFollower(t *testing.T) {
 
 }
 
-func TestReplication_VoteToUInCandidate(t *testing.T) {
+func TestReplica_VoteToUInCandidate(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsCandidate()
@@ -234,7 +234,7 @@ func TestReplication_VoteToUInCandidate(t *testing.T) {
 
 }
 
-func TestReplication_VoteToUInLeader(t *testing.T) {
+func TestReplica_VoteToUInLeader(t *testing.T) {
 
 	rep := initMockRep(t)
 	rep.initAsLeader()
@@ -258,7 +258,7 @@ func TestReplication_VoteToUInLeader(t *testing.T) {
 	assert.Equal(t, Follower, rep.state)
 }
 
-func TestReplication_HandelHeartBeat(t *testing.T) {
+func TestReplica_HandelHeartBeat(t *testing.T) {
 
 	rep := initMockRep(t)
 
@@ -274,7 +274,7 @@ func TestReplication_HandelHeartBeat(t *testing.T) {
 	assert.True(t, old < rep.CurrentTerm)
 }
 
-func initMockRep(t *testing.T) *Replication {
+func initMockRep(t *testing.T) *Replica {
 	storage := NewMockStorage()
 	rpcClient := NewMockRpcClient()
 	rep, _ := NewRep(storage, rpcClient, mockRepConfig)

@@ -15,7 +15,7 @@ type ClusterConfig struct {
 	RepPeers []RepPeer `json:"repPeers"` // map the repId and address
 }
 
-// RepData save replication persistent data
+// RepData save replica persistent data
 type RepData struct {
 	Cluster     ClusterConfig `json:"cluster"`
 	CurrentTerm int64         `json:"currentTerm"`
@@ -23,7 +23,7 @@ type RepData struct {
 	MajorityNum int           `json:"MajorityNum"` // majority of cluster
 }
 
-// RepConfig replication load local config
+// RepConfig replica load local config
 type RepConfig struct {
 	RepId              string  `json:"repId"`              // the identify repId
 	Addr               string  `json:"addr"`               // address to listen for msg

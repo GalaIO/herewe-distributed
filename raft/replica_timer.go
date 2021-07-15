@@ -12,7 +12,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func (r *Replication) resetElectionTimer() {
+func (r *Replica) resetElectionTimer() {
 	r.stopElectionTimeout()
 	n := r.conf.MaxElectionTimeout - r.conf.MinElectionTimeout
 	if n <= 0 {
@@ -29,7 +29,7 @@ func (r *Replication) resetElectionTimer() {
 	}
 }
 
-func (r *Replication) resetHeartbeatTimer() {
+func (r *Replica) resetHeartbeatTimer() {
 	r.stopHeartbeatTimeout()
 	timeout := time.Duration(r.conf.HeartbeatTimeout) * time.Millisecond
 
@@ -40,7 +40,7 @@ func (r *Replication) resetHeartbeatTimer() {
 	}
 }
 
-func (r *Replication) timeoutLoop() {
+func (r *Replica) timeoutLoop() {
 	for {
 		select {
 		case <-r.electionTimer.C:
@@ -60,13 +60,13 @@ func (r *Replication) timeoutLoop() {
 	}
 }
 
-func (r *Replication) handleElectionTimeout() error {
+func (r *Replica) handleElectionTimeout() error {
 	r.electStart = true
 	r.transfer2Candidate()
 	return nil
 }
 
-func (r *Replication) handleHeartBeatTimeout() error {
+func (r *Replica) handleHeartBeatTimeout() error {
 	if r.state != Leader {
 		r.stopHeartbeatTimeout()
 		return nil
@@ -98,7 +98,7 @@ func (r *Replication) handleHeartBeatTimeout() error {
 	return nil
 }
 
-func (r *Replication) stopElectionTimeout() {
+func (r *Replica) stopElectionTimeout() {
 	if r.electionTimer == nil {
 		return
 	}
@@ -111,7 +111,7 @@ func (r *Replication) stopElectionTimeout() {
 	}
 }
 
-func (r *Replication) stopHeartbeatTimeout() {
+func (r *Replica) stopHeartbeatTimeout() {
 	if r.heartbeatTimer == nil {
 		return
 	}

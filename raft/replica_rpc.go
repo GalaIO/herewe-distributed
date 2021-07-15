@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-func (r *Replication) RequestVote(params *ReqVoteParams) (*ReqVoteResult, error) {
+func (r *Replica) RequestVote(params *ReqVoteParams) (*ReqVoteResult, error) {
 	if params == nil {
 		return nil, errors.New("wrong params")
 	}
@@ -25,7 +25,7 @@ func (r *Replication) RequestVote(params *ReqVoteParams) (*ReqVoteResult, error)
 	}, nil
 }
 
-func (r *Replication) AppendEntries(params *AppendEntriesParams) (*AppendEntriesResult, error) {
+func (r *Replica) AppendEntries(params *AppendEntriesParams) (*AppendEntriesResult, error) {
 
 	if params == nil {
 		return nil, errors.New("wrong params")
