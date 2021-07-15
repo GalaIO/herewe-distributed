@@ -1,0 +1,32 @@
+{
+  "rep": {
+    "repId": "El0+6hRV9eKQfkJrMfViDP2qPzA=",
+    "addr": "127.0.0.1:6701",
+    "minElectionTimeout": 150,
+    "maxElectionTimeout": 300,
+    "heartbeatTimeout": 50,
+    "repData": {
+      "cluster": {
+        "repPeers": [
+          {
+            "repId": "El0+6hRV9eKQfkJrMfViDP2qPzA=",
+            "addr": "127.0.0.1:6701"
+          },
+          {
+            "repId": "9d25d/FlqJQrBSiwvE3hUnupM3A=",
+            "addr": "127.0.0.1:6702"
+          },
+          {
+            "repId": "YJpacOKiEjzyHRBm3CWoPGXI+Jc=",
+            "addr": "127.0.0.1:6703"
+          }
+        ]
+      },
+      "currentTerm": 0,
+      "voteFor": ""
+    }
+  },
+  "storage": {
+    "dataDir": "./db"
+  }
+}

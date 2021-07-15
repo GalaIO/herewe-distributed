@@ -1,0 +1,40 @@
+syntax="proto3";
+
+option go_package = "github.com/GalaIO/herewe-distributed/raft";
+
+package raft;
+
+message LogEntry {
+
+}
+
+message AppendEntriesParams {
+  int64 Term = 1; //leader's currentTerm
+  string LeaderId = 2; //so follower can redirect clients
+  int64 PrevLogIndex = 3; //index if log entry preceding new ones
+  int64 PrevLogTerm = 4;
+  repeated LogEntry entries = 5;
+  int64 LeaderCommit = 6; //leader's commitIndex
+}
+
+message AppendEntriesResult {
+  int64 Term = 1; //currentTerm, for leader to update
+  bool success = 2; //true if contained entry matching prevLogIndex and prevLogTerm
+}
+
+message ReqVoteParams {
+  int64 Term = 1; //candidate's currentTerm
+  string CandidateId = 2;
+  int64 LastLogIndex = 3; //index of candidate's last log entry
+  int64 LastLogTerm = 4;
+}
+
+message ReqVoteResult {
+  int64 Term = 1; //currentTerm, for candidate to update
+  bool VoteGranted = 2; //true means candidate received vote
+}
+
+service ReplicationService {
+  rpc RequestVote(ReqVoteParams) returns (ReqVoteResult) {}
+  rpc AppendEntries(AppendEntriesParams) returns (AppendEntriesResult) {}
+}
