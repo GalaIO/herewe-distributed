@@ -24,7 +24,8 @@ message AppendEntriesResult {
   bool success = 2; //true if contained entry matching prevLogIndex and prevLogTerm
   int64 LastLogTerm = 3;
   int64 LastLogIndex = 4;
-  int64 FirstLogIndexInLastTerm = 5; // the first log index in the term of last log's
+  int64 FirstIndexInLastTerm = 5; // the first log index in the term of last log's
+  int64 CommitIndex = 6;
 }
 
 message ReqVoteParams {

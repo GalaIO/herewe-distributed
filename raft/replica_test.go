@@ -9,9 +9,9 @@ import (
 
 var (
 	mockRepIds = []string{
-		"El0+6hRV9eKQfkJrMfViDP2qPzA=",
-		"9d25d/FlqJQrBSiwvE3hUnupM3A=",
-		"YJpacOKiEjzyHRBm3CWoPGXI+Jc=",
+		"alice",
+		"bob",
+		"henk",
 	}
 )
 
@@ -35,13 +35,18 @@ var mockCluster = ClusterConfig{
 var mockRepConfig = RepConfig{
 	RepId:              "El0+6hRV9eKQfkJrMfViDP2qPzA=",
 	Addr:               "127.0.0.1:6701",
-	MinElectionTimeout: 150,
-	MaxElectionTimeout: 300,
-	HeartbeatTimeout:   50,
+	MinElectionTimeout: 300,
+	MaxElectionTimeout: 500,
+	HeartbeatTimeout:   200,
 	RepData: RepData{
-		Cluster:     mockCluster,
-		CurrentTerm: 0,
-		VoteFor:     "",
+		Cluster:      mockCluster,
+		CurrentTerm:  0,
+		VoteFor:      "",
+		MajorityNum:  0,
+		LastLogIndex: 0,
+		LastLogTerm:  0,
+		CommitIndex:  0,
+		LastApplied:  0,
 	},
 }
 
@@ -266,7 +271,14 @@ func TestReplica_HandelHeartBeat(t *testing.T) {
 	old := rep.CurrentTerm
 	for i := 0; i < 10; i++ {
 		time.Sleep(100 * time.Millisecond)
-		rep.OnReceiveHeartBeat(old, mockRepIds[0])
+		rep.AppendEntries(&AppendEntriesParams{
+			Term:         old,
+			LeaderId:     mockRepIds[0],
+			PrevLogIndex: 0,
+			PrevLogTerm:  0,
+			Entries:      nil,
+			LeaderCommit: 0,
+		})
 		assert.Equal(t, Follower, rep.state)
 		assert.Equal(t, old, rep.CurrentTerm)
 	}
@@ -274,6 +286,114 @@ func TestReplica_HandelHeartBeat(t *testing.T) {
 	assert.Equal(t, Candidate, rep.state)
 	assert.True(t, old < rep.CurrentTerm)
 }
+
+func TestReplica_RequestLogEntry(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	rpcClient := NewMockRpcClient(ctrl)
+	rpcClient.EXPECT().SendRequestVote(gomock.Any(), gomock.Any(),
+		gomock.Any()).Return(nil, ErrNotFound).AnyTimes()
+
+	rep := initRpcClientMockRep(t, rpcClient)
+	rep.initAsLeader()
+
+	result := &AppendEntriesResult{
+		Term:                 rep.CurrentTerm,
+		Success:              true,
+		LastLogTerm:          rep.LastLogTerm,
+		LastLogIndex:         rep.LastLogIndex + 1,
+		FirstIndexInLastTerm: 0,
+		CommitIndex:          0,
+	}
+	rpcClient.EXPECT().SendAppendEntries(gomock.Any(), gomock.Any(),
+		gomock.Any()).Return(result, nil).AnyTimes()
+	err := rep.requestLogEntry([]byte("hello"))
+	assert.NoError(t, err)
+	for _, index := range rep.nextIndex {
+		assert.Equal(t, rep.LastLogIndex+1, index)
+	}
+	// TODO
+	//for _, index := range rep.matchIndex {
+	//	assert.Equal(t, rep.LastLogIndex+1, index)
+	//}
+}
+
+func TestReplica_AppendEntries(t *testing.T) {
+	rep := initMockRep(t)
+	samples := []struct {
+		input  *AppendEntriesParams
+		state  RepData
+		output *AppendEntriesResult
+	}{
+		{
+			input: &AppendEntriesParams{
+				Term:         0,
+				LeaderId:     mockRepIds[0],
+				PrevLogIndex: 0,
+				PrevLogTerm:  0,
+				Entries:      []*LogEntry{dummyEntry(1, 0), dummyEntry(2, 0)},
+				LeaderCommit: 0,
+			},
+			state: RepData{
+				Cluster:          rep.Cluster,
+				VoteFor:          "",
+				MajorityNum:      rep.MajorityNum,
+				CommitIndex:      0,
+				LastApplied:      0,
+				CurrentTerm:      0,
+				LastLogIndex:     0,
+				LastLogTerm:      0,
+				FirstIndexInTerm: 0,
+			},
+			output: &AppendEntriesResult{
+				Term:                 rep.CurrentTerm,
+				Success:              true,
+				LastLogTerm:          0,
+				LastLogIndex:         2,
+				FirstIndexInLastTerm: 0,
+				CommitIndex:          0,
+			},
+		},
+		{
+			input: &AppendEntriesParams{
+				Term:         8,
+				LeaderId:     mockRepIds[0],
+				PrevLogIndex: 10,
+				PrevLogTerm:  6,
+				Entries:      []*LogEntry{dummyEntry(1, 0), dummyEntry(2, 0)},
+				LeaderCommit: 0,
+			},
+			state: RepData{
+				Cluster:          rep.Cluster,
+				VoteFor:          "",
+				MajorityNum:      rep.MajorityNum,
+				CommitIndex:      0,
+				LastApplied:      0,
+				CurrentTerm:      3,
+				LastLogIndex:     11,
+				LastLogTerm:      3,
+				FirstIndexInTerm: 7,
+			},
+			output: &AppendEntriesResult{
+				Term:                 8,
+				Success:              false,
+				LastLogTerm:          3,
+				LastLogIndex:         11,
+				FirstIndexInLastTerm: 7,
+				CommitIndex:          0,
+			},
+		},
+	}
+	for _, sample := range samples {
+		rep.RepData = sample.state
+		tmpResult, err := rep.AppendEntries(sample.input)
+		assert.NoError(t, err)
+		assert.Equal(t, sample.output, tmpResult)
+	}
+}
+
+//TODO add more safety tests
+// election commitId tests
 
 func initMockRep(t *testing.T) *Replica {
 	ctrl := gomock.NewController(t)
@@ -286,6 +406,18 @@ func initMockRep(t *testing.T) *Replica {
 	rpcClient.EXPECT().SendRequestVote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, ErrNotFound).AnyTimes()
 
 	rep, _ := NewRep(storage, rpcClient, mockRepConfig)
+
+	err := rep.Start()
+	assert.NoError(t, err)
+	return rep
+}
+
+func initRpcClientMockRep(t *testing.T, client RpcClient) *Replica {
+	ctrl := gomock.NewController(t)
+	storage := NewMockStorage(ctrl)
+	storage.EXPECT().GetRepData().Return(nil, ErrNotFound).AnyTimes()
+	storage.EXPECT().SaveRepData(gomock.Any()).Return(nil).AnyTimes()
+	rep, _ := NewRep(storage, client, mockRepConfig)
 
 	err := rep.Start()
 	assert.NoError(t, err)

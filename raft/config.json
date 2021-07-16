@@ -2,9 +2,9 @@
   "rep": {
     "repId": "El0+6hRV9eKQfkJrMfViDP2qPzA=",
     "addr": "127.0.0.1:6701",
-    "minElectionTimeout": 150,
-    "maxElectionTimeout": 300,
-    "heartbeatTimeout": 50,
+    "minElectionTimeout": 300,
+    "maxElectionTimeout": 500,
+    "heartbeatTimeout": 200,
     "repData": {
       "cluster": {
         "repPeers": [

@@ -18,6 +18,9 @@ func (r *Replica) requestLogEntry(command []byte) error {
 		Term:    r.LastLogTerm,
 	}
 
-	r.saveLogEntry(r.LastLogIndex, entry)
-	return r.SendAppendEntries()
+	repLog.Debugf("rep %v requestLogEntry %v", r.conf.RepId, entry)
+	if err := r.saveLogEntry(r.LastLogIndex, entry); err != nil {
+		return err
+	}
+	return r.SendAppendEntries(false)
 }

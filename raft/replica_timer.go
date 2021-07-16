@@ -1,10 +1,8 @@
 package raft
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -72,30 +70,7 @@ func (r *Replica) whenHeartBeatTimeout() error {
 		return nil
 	}
 	repLog.Debugf("rep %v start send heartbeat, term %v", r.conf.RepId, r.CurrentTerm)
-	ctx := context.Background()
-	params := &AppendEntriesParams{
-		Term:         r.CurrentTerm,
-		LeaderId:     r.conf.RepId,
-		PrevLogIndex: 0,
-		PrevLogTerm:  0,
-		Entries:      nil,
-		LeaderCommit: 0,
-	}
-	for _, peer := range r.Cluster.RepPeers {
-		if strings.EqualFold(peer.RepId, r.conf.RepId) {
-			continue
-		}
-		aeResult, err := r.rpcClient.SendAppendEntries(ctx, params, peer)
-		if err != nil {
-			repLog.Debugf("rep %v send AppendEntries to %v, err %v", r.conf.RepId, peer, err)
-			continue
-		}
-		r.handleAppendEntriesResult(aeResult, peer)
-	}
-
-	// heartbeat periodically
-	r.resetHeartbeatTimer()
-	return nil
+	return r.SendAppendEntries(true)
 }
 
 func (r *Replica) stopElectionTimeout() {

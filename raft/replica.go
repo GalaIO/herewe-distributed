@@ -38,6 +38,14 @@ var repStateStringMap = map[RepSate]string{
 
 var repLog = logger.GetLogger("replica")
 
+var dummyEntry = func(index, term int64) *LogEntry {
+	return &LogEntry{
+		Command: nil,
+		Index:   index,
+		Term:    term,
+	}
+}
+
 type Replica struct {
 	// rep info
 	conf  RepConfig
@@ -89,6 +97,11 @@ func NewRep(storage Storage, rpcClient RpcClient, conf RepConfig) (*Replica, err
 	}
 	rep.RepData = conRepData
 	rep.RepData.MajorityNum = majorityNum
+
+	// if start a empty, save a dummy entry
+	if repData == nil {
+		rep.saveLogEntry(0, dummyEntry(0, 0))
+	}
 
 	if repData != nil {
 		rep.RepData = *repData
@@ -292,15 +305,6 @@ func (r *Replica) VoteToU(repId string, incomeTerm int64) error {
 	return nil
 }
 
-func (r *Replica) OnReceiveHeartBeat(incomeTerm int64, leaderId string) error {
-	err := r.transfer2Follower(incomeTerm, Leader)
-	if err == nil {
-		// accept the leader
-		r.recentlyLeaderId = leaderId
-	}
-	return err
-}
-
 func (r *Replica) startElect() {
 	ctx := context.Background()
 	voteParams := &ReqVoteParams{
@@ -342,15 +346,31 @@ func (r *Replica) handleRequestVoteResult(voteResult *ReqVoteResult,
 
 func (r *Replica) handleAppendEntriesResult(result *AppendEntriesResult,
 	peer RepPeer) error {
-	// if not success, try transfer to follower
+	// if not success check term
 	if !result.Success {
-		if err := r.transfer2Follower(result.Term, Follower); err != nil {
-			repLog.Debugf("rep %v not voted, transfer2Follower err %v", r.conf.RepId, err)
+		if err := r.checkTerm(result.Term, Follower); err != nil {
+			repLog.Debugf("rep %v checkTerm err %v", r.conf.RepId, err)
 		}
-		return errors.New("cannot append entries")
 	}
 
-	// other just retry
+	// reset follower's nextIndex
+	// query follower entry info
+	lastEntry, err := r.queryEntryByIndex(result.LastLogIndex)
+	if err != nil {
+		return err
+	}
+
+	// if right term, chg nextIndex
+	nextIndex := result.LastLogIndex + 1
+	if lastEntry.Term != result.LastLogTerm {
+		nextIndex = result.FirstIndexInLastTerm
+		if result.CommitIndex > nextIndex {
+			nextIndex = result.CommitIndex + 1
+		}
+	}
+	r.nextIndex[peer.RepId] = nextIndex
+	repLog.Debugf("rep %v append entries done, next %v, expect %v",
+		r.conf.RepId, nextIndex, r.LastLogIndex+1)
 	return nil
 }
 
@@ -366,9 +386,38 @@ func (r *Replica) queryRangeEntryByIndex(start int64, end int64) ([]*LogEntry, e
 	if end >= int64(len(r.logs)) || start > end || start < 0 {
 		return nil, ErrNotFound
 	}
-	return r.logs[start:end], nil
+	return r.logs[start : end+1], nil
 }
 
-func (r *Replica) saveLogEntry(index int64, entry *LogEntry) {
+func (r *Replica) saveLogEntry(index int64, entry *LogEntry) error {
+	if entry.Index != index || entry.Term < r.LastLogTerm {
+		return fmt.Errorf("reveive err entry, term %v:%v, index %v:%v",
+			entry.Term, r.LastLogTerm, index, entry.Index)
+	}
 	r.logs = append(r.logs, entry)
+	if index > r.LastLogIndex {
+		r.LastLogIndex = index
+		if entry.Term != r.LastLogTerm {
+			r.LastLogTerm = entry.Term
+			r.FirstIndexInTerm = index
+		}
+	}
+	return nil
+}
+
+func (r *Replica) saveLogEntries(startIndex int64, entries []*LogEntry) error {
+	if len(entries) <= 0 {
+		return nil
+	}
+
+	for i := 0; i < len(entries); i++ {
+		r.saveLogEntry(int64(i)+startIndex, entries[i])
+	}
+
+	return nil
+}
+
+func (r *Replica) commitLogEntries(leaderCommit int64) error {
+	r.CommitIndex = leaderCommit
+	return nil
 }
